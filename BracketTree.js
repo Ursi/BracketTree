@@ -19,9 +19,19 @@ class BracketTree extends Array {
 					}
 				},
 			},
+			close: {
+				get: function(){
+					if (this.complete) return this[this.length - 1];
+				},
+			},
 			complete: {
 				value: false,
 				writable: true,
+			},
+			open: {
+				get: function(){
+					if (this.complete) return this[0];
+				},
 			},
 			string: {
 				get: function() {
@@ -240,7 +250,7 @@ class BracketTree extends Array {
 			// make sure none of the placeholder strings occur in the string
 			while (placeholder.current <= Math.max(btCount, 1)) {
 				if (btStr.includes(placeholder())) {
-					placeholder.count = 1;
+					placeholder.current = 1;
 					placeholder.outer += '@';
 				}
 			}
