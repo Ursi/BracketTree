@@ -1,10 +1,78 @@
+function regExify(str) {
+	return str.replace(/\\/g, '\\\\').replace(/([$\(\)*+\.?\[\]^])/g, '\\$1');
+}
+
 class BracketTree extends Array {
 	constructor(strOrBt, open, close) {
 		super();
-		Object.assign(this, {
-			string: false,
-			complete: strOrBt.complete || false,
+		Object.defineProperties(this, {
+			add: {
+				value: function(value) {
+					if (value.length > 0) {
+						if (typeof value == 'string' || value.complete) {
+							this.push(value);
+						} else if (value.string) {
+							this.push(value[0]);
+						} else {
+							this.push(...value);
+						}
+					}
+				},
+			},
+			complete: {
+				value: false,
+				writable: true,
+			},
+			string: {
+				get: function() {
+					return this.length === 1;
+				},
+			},
 		});
+
+		if (open instanceof RegExp && close instanceof RegExp) {
+			let str = strOrBt.toString();
+			let m = str.match(open);
+			if (m && m.length > 1) {
+				function getSubs(re) {
+					re = RegExp(re, 'g')
+					let subSet = new Set;
+					let match;
+					for (let match of str.matchAll(re)) {
+						subSet.add(match[1]);
+					}
+
+					return subSet;
+				}
+
+				let openSubs = getSubs(open);
+				let closeSubs = getSubs(close);
+				let finalSet = new Set;
+				for (let sub of openSubs) {
+					if (closeSubs.has(sub)) finalSet.add(sub);
+				}
+
+				let fillGroup = (re, fill) => {
+					let bt = new BracketTree(re.toString(), /\((?!\?)/, ')');
+					for (let [i, v] of bt.entries()) {
+						if (v instanceof this.constructor) {
+							bt[i] = regExify(fill);
+							break;
+						}
+					}
+
+					return RegExp(bt.toString().slice(1, -1));
+				}
+
+				let bt = strOrBt
+				for (let sub of finalSet) {
+					//debugger;
+					bt = new BracketTree(bt, fillGroup(open, sub), fillGroup(close, sub));
+				}
+
+				return bt;
+			}
+		}
 
 		if (typeof strOrBt == 'string') {
 			function stringUsed(str, value) {
@@ -36,7 +104,7 @@ class BracketTree extends Array {
 			 	re = RegExp(re, 'g')
 				let matches = [];
 				let match;
-				while (match = re.exec(strOrBt)) {
+				for (let match of strOrBt.matchAll(re)) {
 					let l = match[0].length;
 					if (l === 0) throw re.toString() + " has a match of length 0"
 					matches.push({
@@ -48,8 +116,6 @@ class BracketTree extends Array {
 						value: value,
 						match: match[0],
 					});
-
-					//matches.push([match.index, match[0].length]);
 				}
 
 				return matches;
@@ -70,7 +136,7 @@ class BracketTree extends Array {
 			}
 
 			if (opens.length === 0 || closes.length === 0) {
-				this.string = true;
+				//this.string = true;
 				this.add(strOrBt);
 			} else {
 				let combined = [];
@@ -82,7 +148,7 @@ class BracketTree extends Array {
 				}
 
 				if (!closes[c]) {
-					this.string = true;
+					//this.string = true;
 					this.add(strOrBt);
 				} else {
 					let errMsg = `${open} and ${close} have matches that overlap`
@@ -170,16 +236,42 @@ class BracketTree extends Array {
 			}
 
 			let btStr = strOrBt.stringsOnly();
+			if (!btStr) return strOrBt;
 			// make sure none of the placeholder strings occur in the string
-			while (placeholder.current <= btCount) {
+			while (placeholder.current <= Math.max(btCount, 1)) {
 				if (btStr.includes(placeholder())) {
 					placeholder.count = 1;
 					placeholder.outer += '@';
 				}
 			}
 
+			// turn into a string with placeholders
 			placeholder.current = 1;
-			let str = ''
+///////////////////////////////////////////
+			let str = '';
+			let start;
+			let finish;
+			if (strOrBt.complete) {
+				start = 1;
+				finish = strOrBt.length - 1;
+			} else {
+				start = 0;
+				finish = strOrBt.length;
+			}
+
+			for (let i = start; i < finish; i++) {
+				if (typeof strOrBt[i] == 'string') {
+					str += strOrBt[i];
+				} else {
+					let p = placeholder();
+					placeholder.map[p] = strOrBt[i];
+					str += p;
+				}
+			}
+
+
+
+			/*let str = ''
 			for (let value of strOrBt) {
 				if (typeof value == 'string') {
 					str += value;
@@ -188,27 +280,86 @@ class BracketTree extends Array {
 					placeholder.map[p] = value;
 					str += p;
 				}
+			}*/
+//////////////////////////////////////////////////
+			let bt = new this.constructor(str, open, close);
+			if (strOrBt.complete) {
+				if (bt.complete) {
+					strOrBt.splice(1, 1, bt);
+					bt = strOrBt;
+				/*} else if (bt.string) {
+					strOrBt.splice(1, 1, ...bt);
+					bt = strOrBt;*/
+				} else {
+					bt.unshift(strOrBt[0]);
+					bt.push(strOrBt[strOrBt.length - 1]);
+					bt.complete = true;
+					//bt.string = false;
+				}
+
+				//bt = strOrBt;
 			}
 
-			//new this.constructor(str, open, close);
+			// put bracketTrees back in
+			(function replace(bt, outer, start = 1) {
+				placeholder.current = start;
+				let ph = placeholder()
+				let i = 0;
+				while (i < bt.length) {
+					if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
+						let split = bt[i].split(ph);
+						let subBt = new BracketTree(placeholder.map[ph], open, close);
+						split.splice(1, 0, subBt);
+						split = split.filter(v => v);
+						bt.splice(i, 1, ...split);
+						i += split.indexOf(subBt) + 1;
+						ph = placeholder();
+					} else if (bt[i] instanceof this.constructor){
+						ph = replace.call(this, bt[i], outer, placeholder.current - 1);
+						i++;
+					} else {
+						i++;
+					}
+				}
+
+				return ph;
+			}).call(this, bt, placeholder.outer);
+
+			return bt;
 		}
 	}
 
-	add(value) {
-		if (value.length > 0) {
-			if (value.string) {
-				this.push(value[0]);
-			} else {
-				this.push(value);
+	get first() {
+		if (this.complete) {
+			return this.toString();
+		} else {
+			for (let value of this) {
+				if (value instanceof this.constructor) {
+					return value.toString();
+				}
 			}
 		}
 	}
 
 	stringsOnly() {
 		let str = '';
-		for (let value of this) {
-			if (typeof value == 'string') str += value;
+		let start;
+		let finish;
+		if (this.complete) {
+			start = 1;
+			finish = this.length - 1;
+		} else {
+			start = 0;
+			finish = this.length;
 		}
+
+		for (let i = start; i < finish; i++) {
+			if (typeof this[i] == 'string') str += this[i];
+		}
+
+		/*for (let value of this) {
+			if (typeof value == 'string') str += value;
+		}*/
 
 		return str;
 	}
