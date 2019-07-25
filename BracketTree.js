@@ -1,3 +1,8 @@
+function debug(str) {
+	console.log(str);
+	debugger;
+}
+
 function regExify(str) {
 	return str.replace(/\\/g, '\\\\').replace(/([$\(\)*+\.?\[\]^])/g, '\\$1');
 }
@@ -233,13 +238,6 @@ class BracketTree extends Array {
 				}
 			}
 		} else if (strOrBt instanceof this.constructor) {
-			function placeholder() {
-				return `${placeholder.outer}${placeholder.current++}${placeholder.outer}`;
-			}
-
-			placeholder.map = {};
-			placeholder.current = 1;
-			placeholder.outer = '@';
 			let btCount = 0;
 			for (let value of strOrBt) {
 				if (value instanceof this.constructor) btCount++
@@ -247,12 +245,38 @@ class BracketTree extends Array {
 
 			let btStr = strOrBt.stringsOnly();
 			if (!btStr) return strOrBt;
-			// make sure none of the placeholder strings occur in the string
-			while (placeholder.current <= Math.max(btCount, 1)) {
-				if (btStr.includes(placeholder())) {
-					placeholder.current = 1;
-					placeholder.outer += '@';
+			function placeholder() {
+				return `${placeholder.ends}${placeholder.body.repeat(placeholder.current++)}${placeholder.ends}`;
+			}
+
+			Object.assign(placeholder, {
+				current: 1,
+				map: {},
+				randChar: ()=> String.fromCharCode(Math.floor(Math.random() * 2**16)),
+				roll: function(){
+					this.current = 1;
+					['ends', 'body'].forEach(prop => this[prop] = this.randChar());
+				},
+			});
+
+			placeholder.roll();
+			// make sure none of the placeholder strings occur in the string or match the brackets
+			function test(bracket, ph) {
+				if (typeof bracket == 'string' && bracket.includes(ph)) {
+					placeholder.roll();
+				} else if (bracket.test(ph)) {
+					placeholder.roll();
 				}
+			}
+
+			while (placeholder.current <= Math.max(btCount, 1)) {
+				let ph = placeholder();
+				if (btStr.includes(ph)) {
+					placeholder.roll();
+				}
+
+				test(open, ph);
+				test(close, ph);
 			}
 
 			// turn into a string with placeholders
@@ -278,7 +302,6 @@ class BracketTree extends Array {
 					str += p;
 				}
 			}
-
 
 
 			/*let str = ''
@@ -311,7 +334,7 @@ class BracketTree extends Array {
 			}
 
 			// put bracketTrees back in
-			(function replace(bt, outer, start = 1) {
+			(function replace(bt, start = 1) {
 				placeholder.current = start;
 				let ph = placeholder()
 				let i = 0;
@@ -325,7 +348,7 @@ class BracketTree extends Array {
 						i += split.indexOf(subBt) + 1;
 						ph = placeholder();
 					} else if (bt[i] instanceof this.constructor){
-						ph = replace.call(this, bt[i], outer, placeholder.current - 1);
+						ph = replace.call(this, bt[i], placeholder.current - 1);
 						i++;
 					} else {
 						i++;
@@ -333,7 +356,7 @@ class BracketTree extends Array {
 				}
 
 				return ph;
-			}).call(this, bt, placeholder.outer);
+			}).call(this, bt);
 
 			return bt;
 		}
