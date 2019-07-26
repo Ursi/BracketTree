@@ -376,6 +376,15 @@ class BracketTree extends Array {
 		return str;
 	}
 
+	subTrees(){
+		let bts = [];
+		for (let value of this) {
+			if (value instanceof this.constructor) bts.push(value);
+		}
+
+		return bts;
+	}
+
 	toString() {
 		let str = '';
 		for (let value of this) {
