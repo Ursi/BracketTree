@@ -254,8 +254,8 @@ class BracketTree extends Array {
 				placeholder.roll();
 				// make sure none of the placeholder strings occur in the string or match the brackets
 				function test(bracket, ph) {
-					if (typeof bracket == 'string' && bracket.includes(ph)) {
-						placeholder.roll();
+					if (typeof bracket == 'string') {
+						if (bracket.includes(ph)) placeholder.roll();
 					} else if (bracket.test(ph)) {
 						placeholder.roll();
 					}
