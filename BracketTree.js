@@ -353,9 +353,14 @@ class BracketTree extends Array {
 			}
 
 			if (strOrBt.complete) {
-				bt.unshift(strOrBt[0]);
-				bt.push(strOrBt[strOrBt.length - 1]);
-				bt.complete = true;
+				if (bt.complete) {
+					strOrBt.splice(1, 1, bt);
+					return strOrBt;
+				} else {
+					bt.unshift(strOrBt[0]);
+					bt.push(strOrBt[strOrBt.length - 1]);
+					bt.complete = true;
+				}
 			}
 
 			return bt;
