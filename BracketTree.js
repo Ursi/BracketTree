@@ -230,9 +230,19 @@ class BracketTree extends Array {
 		} else if (strOrBt instanceof this.constructor) {
 			let btStr = strOrBt.stringsOnly();
 			if (!btStr) return strOrBt; //if it's a complete bracketTree with nothing but the brackets, you're done
+			let start;
+			let finish;
+			if (strOrBt.complete) {// Create the placeholder string with only the content of strOrBt.stringsOnly(). Otherwise complete BTs will get turned incomplete. The outer brackets will be added back later.
+				start = 1;
+				finish = strOrBt.length - 1;
+			} else {
+				start = 0;
+				finish = strOrBt.length;
+			}
+
 			let btCount = 0;
-			for (let value of strOrBt) {
-				if (value instanceof this.constructor) btCount++
+			for (let i = start; i < finish; i++) {
+				if (strOrBt[i] instanceof this.constructor) btCount++;
 			}
 
 			let bt;
@@ -273,58 +283,19 @@ class BracketTree extends Array {
 
 				// turn into a string with placeholders
 				placeholder.current = 1;
-	///////////////////////////////////////////
-				let str = '';
-				let start;
-				let finish;
-				if (strOrBt.complete) {
-					start = 1;
-					finish = strOrBt.length - 1;
-				} else {
-					start = 0;
-					finish = strOrBt.length;
-				}
-
+				let phStr = '';
 				for (let i = start; i < finish; i++) {
 					if (typeof strOrBt[i] == 'string') {
-						str += strOrBt[i];
+						phStr += strOrBt[i];
 					} else {
 						let ph = placeholder();
 						placeholder.map[ph] = strOrBt[i];
-						str += ph;
+						phStr += ph;
 					}
 				}
 
-				/*let str = ''
-				for (let value of strOrBt) {
-					if (typeof value == 'string') {
-						str += value;
-					} else {
-						let p = placeholder();
-						placeholder.map[p] = value;
-						str += p;
-					}
-				}*/
-	//////////////////////////////////////////////////
-				bt = new this.constructor(str, open, close);
-				/*if (strOrBt.complete) {
-					//if (bt.complete) {
-					//	strOrBt.splice(1, 1, bt);
-					//	bt = strOrBt;
-					///} else if (bt.string) {
-					///	strOrBt.splice(1, 1, ...bt);
-					///	bt = strOrBt;
-					//} else {
-						bt.unshift(strOrBt[0]);
-						bt.push(strOrBt[strOrBt.length - 1]);
-						bt.complete = true;
-						//bt.string = false;
-					//}
-
-					//bt = strOrBt;
-				}*/
-
-				// put bracketTrees back in
+				// make a BT out of the placeholder string, then find the placeholders and put the BTs back in
+				bt = new this.constructor(phStr, open, close);
 				(function replace(bt, start = 1) {
 					placeholder.current = start;
 					let ph = placeholder()
@@ -332,8 +303,10 @@ class BracketTree extends Array {
 					while (i < bt.length) {
 						if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
 							let split = bt[i].split(ph);
+							// recurse over the sub-BT
 							let subBt = new BracketTree(placeholder.map[ph], open, close);
 							split.splice(1, 0, subBt);
+							// filter out empty strings caused when the placeholder was at one of the ends
 							split = split.filter(v => v);
 							bt.splice(i, 1, ...split);
 							i += split.indexOf(subBt) + 1;
@@ -353,6 +326,7 @@ class BracketTree extends Array {
 			}
 
 			if (strOrBt.complete) {
+				// add back the backets of the enclosing BT
 				if (bt.complete) {
 					strOrBt.splice(1, strOrBt.length - 2, bt);
 					return strOrBt;
