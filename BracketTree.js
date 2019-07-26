@@ -1,12 +1,3 @@
-function debug(str) {
-	console.log(str);
-	debugger;
-}
-
-function regExify(str) {
-	return str.replace(/\\/g, '\\\\').replace(/([$\(\)*+\.?\[\]^])/g, '\\$1');
-}
-
 class BracketTree extends Array {
 	constructor(strOrBt, open, close) {
 		super();
@@ -45,7 +36,7 @@ class BracketTree extends Array {
 			},
 		});
 
-		if (open instanceof RegExp && close instanceof RegExp) {
+		if (open instanceof RegExp && close instanceof RegExp) {// See if the capture group feature is being used
 			let str = strOrBt.toString();
 			let m = str.match(open);
 			if (m && m.length > 1) {
@@ -69,6 +60,10 @@ class BracketTree extends Array {
 
 				let fillGroup = (re, fill) => {
 					let bt = new BracketTree(re.toString(), /\((?!\?)/, ')');
+					function regExify(str) {
+						return str.replace(/\\/g, '\\\\').replace(/([$\(\)*+\.?\[\]^])/g, '\\$1');
+					}
+
 					for (let [i, v] of bt.entries()) {
 						if (v instanceof this.constructor) {
 							bt[i] = regExify(fill);
@@ -79,9 +74,8 @@ class BracketTree extends Array {
 					return RegExp(bt.toString().slice(1, -1));
 				}
 
-				let bt = strOrBt
+				let bt = strOrBt;
 				for (let sub of finalSet) {
-					//debugger;
 					bt = new BracketTree(bt, fillGroup(open, sub), fillGroup(close, sub));
 				}
 
@@ -151,19 +145,14 @@ class BracketTree extends Array {
 			}
 
 			if (opens.length === 0 || closes.length === 0) {
-				//this.string = true;
 				this.add(strOrBt);
 			} else {
 				let combined = [];
 				let o = 0;
 				let c = 0;
 				// start after the first open match
-				while (closes[c] && closes[c].start < opens[0].start) {
-					c++;
-				}
-
+				while (closes[c] && closes[c].start < opens[0].start) c++;
 				if (!closes[c]) {
-					//this.string = true;
 					this.add(strOrBt);
 				} else {
 					let errMsg = `${open} and ${close} have matches that overlap`
@@ -194,8 +183,8 @@ class BracketTree extends Array {
 						}
 					}
 
+					//pair up the outermost matching brackets
 					let openIndex = 0;
-					let closeIndex = 0;
 					let count = 0;
 					let start = false;
 					let pairs = [];
@@ -221,10 +210,11 @@ class BracketTree extends Array {
 						this.complete = true;
 						[
 							pairs[0][0].match,
-							new this.constructor(strOrBt.slice(pairs[0][0].end, pairs[0][1].start), open, close),
+							new this.constructor(strOrBt.slice(pairs[0][0].end, pairs[0][1].start), open, close), // recurse through the inner bracket paris
 							pairs[0][1].match,
 						].forEach(value => this.add(value));
 					} else {
+						// add the multiple bracket pairs and the strings in between, recursing over their inner bracket pairs
 						let pairStr = i => strOrBt.slice(pairs[i][0].start, pairs[i][1].end);
 						this.add(strOrBt.slice(0, pairs[0][0].start));
 						this.add(new this.constructor(pairStr(0), open, close));
@@ -238,125 +228,135 @@ class BracketTree extends Array {
 				}
 			}
 		} else if (strOrBt instanceof this.constructor) {
+			let btStr = strOrBt.stringsOnly();
+			if (!btStr) return strOrBt; //if it's a complete bracketTree with nothing but the brackets, you're done
 			let btCount = 0;
 			for (let value of strOrBt) {
 				if (value instanceof this.constructor) btCount++
 			}
 
-			let btStr = strOrBt.stringsOnly();
-			if (!btStr) return strOrBt;
-			function placeholder() {
-				return `${placeholder.ends}${placeholder.body.repeat(placeholder.current++)}${placeholder.ends}`;
-			}
-
-			Object.assign(placeholder, {
-				current: 1,
-				map: {},
-				randChar: ()=> String.fromCharCode(Math.floor(Math.random() * 2**16)),
-				roll: function(){
-					this.current = 1;
-					['ends', 'body'].forEach(prop => this[prop] = this.randChar());
-				},
-			});
-
-			placeholder.roll();
-			// make sure none of the placeholder strings occur in the string or match the brackets
-			function test(bracket, ph) {
-				if (typeof bracket == 'string' && bracket.includes(ph)) {
-					placeholder.roll();
-				} else if (bracket.test(ph)) {
-					placeholder.roll();
-				}
-			}
-
-			while (placeholder.current <= Math.max(btCount, 1)) {
-				let ph = placeholder();
-				if (btStr.includes(ph)) {
-					placeholder.roll();
+			let bt;
+			if (btCount) {
+				function placeholder() {
+					return `${placeholder.ends}${placeholder.body.repeat(placeholder.current++)}${placeholder.ends}`;
 				}
 
-				test(open, ph);
-				test(close, ph);
-			}
+				Object.assign(placeholder, {
+					current: 1,
+					map: {},
+					randChar: ()=> String.fromCharCode(Math.floor(Math.random() * 2**16)),
+					roll: function(){
+						this.current = 1;
+						['ends', 'body'].forEach(prop => this[prop] = this.randChar());
+					},
+				});
 
-			// turn into a string with placeholders
-			placeholder.current = 1;
-///////////////////////////////////////////
-			let str = '';
-			let start;
-			let finish;
-			if (strOrBt.complete) {
-				start = 1;
-				finish = strOrBt.length - 1;
-			} else {
-				start = 0;
-				finish = strOrBt.length;
-			}
-
-			for (let i = start; i < finish; i++) {
-				if (typeof strOrBt[i] == 'string') {
-					str += strOrBt[i];
-				} else {
-					let p = placeholder();
-					placeholder.map[p] = strOrBt[i];
-					str += p;
-				}
-			}
-
-
-			/*let str = ''
-			for (let value of strOrBt) {
-				if (typeof value == 'string') {
-					str += value;
-				} else {
-					let p = placeholder();
-					placeholder.map[p] = value;
-					str += p;
-				}
-			}*/
-//////////////////////////////////////////////////
-			let bt = new this.constructor(str, open, close);
-			if (strOrBt.complete) {
-				if (bt.complete) {
-					strOrBt.splice(1, 1, bt);
-					bt = strOrBt;
-				/*} else if (bt.string) {
-					strOrBt.splice(1, 1, ...bt);
-					bt = strOrBt;*/
-				} else {
-					bt.unshift(strOrBt[0]);
-					bt.push(strOrBt[strOrBt.length - 1]);
-					bt.complete = true;
-					//bt.string = false;
-				}
-
-				//bt = strOrBt;
-			}
-
-			// put bracketTrees back in
-			(function replace(bt, start = 1) {
-				placeholder.current = start;
-				let ph = placeholder()
-				let i = 0;
-				while (i < bt.length) {
-					if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
-						let split = bt[i].split(ph);
-						let subBt = new BracketTree(placeholder.map[ph], open, close);
-						split.splice(1, 0, subBt);
-						split = split.filter(v => v);
-						bt.splice(i, 1, ...split);
-						i += split.indexOf(subBt) + 1;
-						ph = placeholder();
-					} else if (bt[i] instanceof this.constructor){
-						ph = replace.call(this, bt[i], placeholder.current - 1);
-						i++;
-					} else {
-						i++;
+				placeholder.roll();
+				// make sure none of the placeholder strings occur in the string or match the brackets
+				function test(bracket, ph) {
+					if (typeof bracket == 'string' && bracket.includes(ph)) {
+						placeholder.roll();
+					} else if (bracket.test(ph)) {
+						placeholder.roll();
 					}
 				}
 
-				return ph;
-			}).call(this, bt);
+				while (placeholder.current <= btCount) {
+					let ph = placeholder();
+					if (btStr.includes(ph)) {
+						placeholder.roll();
+					}
+
+					test(open, ph);
+					test(close, ph);
+				}
+
+				// turn into a string with placeholders
+				placeholder.current = 1;
+	///////////////////////////////////////////
+				let str = '';
+				let start;
+				let finish;
+				if (strOrBt.complete) {
+					start = 1;
+					finish = strOrBt.length - 1;
+				} else {
+					start = 0;
+					finish = strOrBt.length;
+				}
+
+				for (let i = start; i < finish; i++) {
+					if (typeof strOrBt[i] == 'string') {
+						str += strOrBt[i];
+					} else {
+						let ph = placeholder();
+						placeholder.map[ph] = strOrBt[i];
+						str += ph;
+					}
+				}
+
+				/*let str = ''
+				for (let value of strOrBt) {
+					if (typeof value == 'string') {
+						str += value;
+					} else {
+						let p = placeholder();
+						placeholder.map[p] = value;
+						str += p;
+					}
+				}*/
+	//////////////////////////////////////////////////
+				bt = new this.constructor(str, open, close);
+				/*if (strOrBt.complete) {
+					//if (bt.complete) {
+					//	strOrBt.splice(1, 1, bt);
+					//	bt = strOrBt;
+					///} else if (bt.string) {
+					///	strOrBt.splice(1, 1, ...bt);
+					///	bt = strOrBt;
+					//} else {
+						bt.unshift(strOrBt[0]);
+						bt.push(strOrBt[strOrBt.length - 1]);
+						bt.complete = true;
+						//bt.string = false;
+					//}
+
+					//bt = strOrBt;
+				}*/
+
+				// put bracketTrees back in
+				(function replace(bt, start = 1) {
+					placeholder.current = start;
+					let ph = placeholder()
+					let i = 0;
+					while (i < bt.length) {
+						if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
+							let split = bt[i].split(ph);
+							let subBt = new BracketTree(placeholder.map[ph], open, close);
+							split.splice(1, 0, subBt);
+							split = split.filter(v => v);
+							bt.splice(i, 1, ...split);
+							i += split.indexOf(subBt) + 1;
+							ph = placeholder();
+						} else if (bt[i] instanceof this.constructor){
+							ph = replace.call(this, bt[i], placeholder.current - 1);
+							i++;
+						} else {
+							i++;
+						}
+					}
+
+					return ph;
+				}).call(this, bt);
+			} else {
+				bt = new this.constructor(strOrBt.stringsOnly(), open, close);
+			}
+
+			if (strOrBt.complete) {
+				bt.unshift(strOrBt[0]);
+				bt.push(strOrBt[strOrBt.length - 1]);
+				bt.complete = true;
+			}
 
 			return bt;
 		}
