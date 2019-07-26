@@ -354,7 +354,7 @@ class BracketTree extends Array {
 
 			if (strOrBt.complete) {
 				if (bt.complete) {
-					strOrBt.splice(1, 1, bt);
+					strOrBt.splice(1, strOrBt.length - 2, bt);
 					return strOrBt;
 				} else {
 					bt.unshift(strOrBt[0]);
