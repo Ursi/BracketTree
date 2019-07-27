@@ -184,7 +184,7 @@ class BracketTree extends Array {
 					}
 
 					//pair up the outermost matching brackets
-					let openIndex = 0;
+					let openIndex = 0,
 						count = 0,
 						start = false,
 						pairs = [];
@@ -302,9 +302,9 @@ class BracketTree extends Array {
 						i = 0;
 					while (i < bt.length) {
 						if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
-							let split = bt[i].split(ph);
-							// recurse over the sub-BT
-							let subBt = new BracketTree(placeholder.map[ph], open, close);
+							let split = bt[i].split(ph),
+								// recurse over the sub-BT
+								subBt = new BracketTree(placeholder.map[ph], open, close);
 							split.splice(1, 0, subBt);
 							// filter out empty strings caused when the placeholder was at one of the ends
 							split = split.filter(v => v);
