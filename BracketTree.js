@@ -37,13 +37,13 @@ class BracketTree extends Array {
 		});
 
 		if (open instanceof RegExp && close instanceof RegExp) {// See if the capture group feature is being used
-			let str = strOrBt.toString();
-			let m = str.match(open);
+			let str = strOrBt.toString(),
+				m = str.match(open);
 			if (m && m.length > 1) {
 				function getSubs(re) {
 					re = RegExp(re, 'g')
-					let subSet = new Set;
-					let match;
+					let subSet = new Set,
+						match;
 					for (let match of str.matchAll(re)) {
 						subSet.add(match[1]);
 					}
@@ -51,9 +51,9 @@ class BracketTree extends Array {
 					return subSet;
 				}
 
-				let openSubs = getSubs(open);
-				let closeSubs = getSubs(close);
-				let finalSet = new Set;
+				let openSubs = getSubs(open),
+					closeSubs = getSubs(close),
+					finalSet = new Set;
 				for (let sub of openSubs) {
 					if (closeSubs.has(sub)) finalSet.add(sub);
 				}
@@ -86,8 +86,8 @@ class BracketTree extends Array {
 		if (typeof strOrBt == 'string') {
 			function stringUsed(str, value) {
 				if (!str) throw "'open' is the empty string"
-				let matches = []
-				let index = 0;
+				let matches = [],
+					index = 0;
 				while (index + str.length <= strOrBt.length) {
 					if (strOrBt.slice(index, index + str.length) === str) {
 						matches.push({
@@ -111,8 +111,8 @@ class BracketTree extends Array {
 
 			function reUsed(re, value) {
 			 	re = RegExp(re, 'g')
-				let matches = [];
-				let match;
+				let matches = [],
+					match;
 				for (let match of strOrBt.matchAll(re)) {
 					let l = match[0].length;
 					if (l === 0) throw re.toString() + " has a match of length 0"
@@ -147,9 +147,9 @@ class BracketTree extends Array {
 			if (opens.length === 0 || closes.length === 0) {
 				this.add(strOrBt);
 			} else {
-				let combined = [];
-				let o = 0;
-				let c = 0;
+				let combined = [],
+					o = 0,
+					c = 0;
 				// start after the first open match
 				while (closes[c] && closes[c].start < opens[0].start) c++;
 				if (!closes[c]) {
@@ -185,9 +185,9 @@ class BracketTree extends Array {
 
 					//pair up the outermost matching brackets
 					let openIndex = 0;
-					let count = 0;
-					let start = false;
-					let pairs = [];
+						count = 0,
+						start = false,
+						pairs = [];
 					for (let match of combined) {
 						count += match.value;
 						if (count < 0) {
@@ -230,8 +230,8 @@ class BracketTree extends Array {
 		} else if (strOrBt instanceof this.constructor) {
 			let btStr = strOrBt.stringsOnly();
 			if (!btStr) return strOrBt; //if it's a complete bracketTree with nothing but the brackets, you're done
-			let start;
-			let finish;
+			let start,
+				finish;
 			if (strOrBt.complete) {// Create the placeholder string with only the content of strOrBt.stringsOnly(). Otherwise complete BTs will get turned incomplete. The outer brackets will be added back later.
 				start = 1;
 				finish = strOrBt.length - 1;
@@ -298,8 +298,8 @@ class BracketTree extends Array {
 				bt = new this.constructor(phStr, open, close);
 				(function replace(bt, start = 1) {
 					placeholder.current = start;
-					let ph = placeholder()
-					let i = 0;
+					let ph = placeholder(),
+						i = 0;
 					while (i < bt.length) {
 						if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
 							let split = bt[i].split(ph);
@@ -354,9 +354,9 @@ class BracketTree extends Array {
 	}
 
 	stringsOnly() {
-		let str = '';
-		let start;
-		let finish;
+		let str = '',
+			start,
+			finish;
 		if (this.complete) {
 			start = 1;
 			finish = this.length - 1;
