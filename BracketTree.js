@@ -248,16 +248,19 @@ class BracketTree extends Array {
 			let bt;
 			if (btCount) {
 				function placeholder() {
-					return `${placeholder.ends}${placeholder.body.repeat(placeholder.current++)}${placeholder.ends}`;
+					return `${placeholder.ends}${placeholder.body.repeat(placeholder.nextSize++)}${placeholder.ends}`;
 				}
 
 				Object.assign(placeholder, {
-					current: 1,
+					nextSize: 1,
 					map: {},
 					randChar: ()=> String.fromCharCode(Math.floor(Math.random() * 2**16)),
 					roll: function(){
-						this.current = 1;
+						this.nextSize = 1;
 						[`ends`, `body`].forEach(prop => this[prop] = this.randChar());
+						if (this.ends === this.body) {
+							this.roll();
+						}
 					},
 				});
 
@@ -271,7 +274,7 @@ class BracketTree extends Array {
 					}
 				}
 
-				while (placeholder.current <= btCount) {
+				while (placeholder.nextSize <= btCount) {
 					let ph = placeholder();
 					if (btStr.includes(ph)) {
 						placeholder.roll();
@@ -282,7 +285,7 @@ class BracketTree extends Array {
 				}
 
 				// turn into a string with placeholders
-				placeholder.current = 1;
+				placeholder.nextSize = 1;
 				let phStr = ``;
 				for (let i = start; i < finish; i++) {
 					if (typeof strOrBt[i] === `string`) {
@@ -297,14 +300,18 @@ class BracketTree extends Array {
 				// make a BT out of the placeholder string, then find the placeholders and put the BTs back in
 				bt = new this.constructor(phStr, open, close);
 				(function replace(bt, start = 1) {
-					placeholder.current = start;
-					let ph = placeholder(),
+					placeholder.nextSize = start;
+					let
+						ph = placeholder(),
 						i = 0;
+
 					while (i < bt.length) {
 						if (typeof bt[i] === `string` && bt[i].includes(ph)) {
-							let split = bt[i].split(ph),
+							let
+								split = bt[i].split(ph),
 								// recurse over the sub-BT
 								subBt = new BracketTree(placeholder.map[ph], open, close);
+
 							split.splice(1, 0, subBt);
 							// filter out empty strings caused when the placeholder was at one of the ends
 							split = split.filter(v => v);
@@ -312,7 +319,7 @@ class BracketTree extends Array {
 							i += split.indexOf(subBt) + 1;
 							ph = placeholder();
 						} else if (bt[i] instanceof this.constructor){
-							ph = replace.call(this, bt[i], placeholder.current - 1);
+							ph = replace.call(this, bt[i], placeholder.nextSize - 1);
 							i++;
 						} else {
 							i++;
