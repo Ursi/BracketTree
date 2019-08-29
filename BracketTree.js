@@ -2,37 +2,9 @@ class BracketTree extends Array {
 	constructor(strOrBt, open, close) {
 		super();
 		Object.defineProperties(this, {
-			add: {
-				value: function(value) {
-					if (value.length > 0) {
-						if (typeof value === `string` || value.complete) {
-							this.push(value);
-						} else if (value.string) {
-							this.push(value[0]);
-						} else {
-							this.push(...value);
-						}
-					}
-				},
-			},
-			close: {
-				get: function(){
-					if (this.complete) return this[this.length - 1];
-				},
-			},
 			complete: {
 				value: false,
 				writable: true,
-			},
-			open: {
-				get: function(){
-					if (this.complete) return this[0];
-				},
-			},
-			string: {
-				get: function() {
-					return this.length === 1;
-				},
 			},
 		});
 
@@ -348,6 +320,20 @@ class BracketTree extends Array {
 		}
 	}
 
+	add(value) {
+		if (value.length > 0) {
+			if (typeof value === `string` || value.complete) {
+				this.push(value);
+			} else if (value.string) {
+				this.push(value[0]);
+			} else {
+				this.push(...value);
+			}
+		}
+	}
+
+	get close() {if (this.complete) return this[this.length - 1];}
+
 	get first() {
 		if (this.complete) {
 			return this.toString();
@@ -359,6 +345,10 @@ class BracketTree extends Array {
 			}
 		}
 	}
+
+	get open() {if (this.complete) return this[0];}
+
+	get string() {return this.length === 1;}
 
 	stringsOnly() {
 		let str = ``,
