@@ -5,7 +5,7 @@ class BracketTree extends Array {
 			add: {
 				value: function(value) {
 					if (value.length > 0) {
-						if (typeof value == 'string' || value.complete) {
+						if (typeof value === `string` || value.complete) {
 							this.push(value);
 						} else if (value.string) {
 							this.push(value[0]);
@@ -41,7 +41,7 @@ class BracketTree extends Array {
 				m = str.match(open);
 			if (m && m.length > 1) {
 				function getSubs(re) {
-					re = RegExp(re, 'g')
+					re = RegExp(re, `g`)
 					let subSet = new Set,
 						match;
 					for (let match of str.matchAll(re)) {
@@ -59,9 +59,9 @@ class BracketTree extends Array {
 				}
 
 				let fillGroup = (re, fill) => {
-					let bt = new BracketTree(re.toString(), /\((?!\?)/, ')');
+					let bt = new BracketTree(re.toString(), /\((?!\?)/, `)`);
 					function regExify(str) {
-						return str.replace(/\\/g, '\\\\').replace(/([$\(\)*+\.?\[\]^])/g, '\\$1');
+						return str.replace(/\\/g, `\\\\`).replace(/([$\(\)*+\.?\[\]^])/g, `\\$1`);
 					}
 
 					for (let [i, v] of bt.entries()) {
@@ -83,9 +83,9 @@ class BracketTree extends Array {
 			}
 		}
 
-		if (typeof strOrBt == 'string') {
+		if (typeof strOrBt === `string`) {
 			function stringUsed(str, value) {
-				if (!str) throw "'open' is the empty string"
+				if (!str) throw `'open' is the empty string`;
 				let matches = [],
 					index = 0;
 				while (index + str.length <= strOrBt.length) {
@@ -110,12 +110,12 @@ class BracketTree extends Array {
 			};
 
 			function reUsed(re, value) {
-			 	re = RegExp(re, 'g')
+				re = RegExp(re, `g`)
 				let matches = [],
 					match;
 				for (let match of strOrBt.matchAll(re)) {
 					let l = match[0].length;
-					if (l === 0) throw re.toString() + " has a match of length 0"
+					if (l === 0) throw `${re.toString()} has a match of length 0`;
 					matches.push({
 						start: match.index,
 						get end() {
@@ -131,14 +131,14 @@ class BracketTree extends Array {
 			};
 
 			let opens = [];
-			if (typeof open == 'string') {
+			if (typeof open === `string`) {
 				opens = stringUsed(open, 1);
 			} else {
 				opens = reUsed(open, 1);
 			}
 
 			let closes = [];
-			if (typeof close == 'string') {
+			if (typeof close === `string`) {
 				closes = stringUsed(close, -1);
 			} else {
 				closes = reUsed(close, -1);
@@ -257,14 +257,14 @@ class BracketTree extends Array {
 					randChar: ()=> String.fromCharCode(Math.floor(Math.random() * 2**16)),
 					roll: function(){
 						this.current = 1;
-						['ends', 'body'].forEach(prop => this[prop] = this.randChar());
+						[`ends`, `body`].forEach(prop => this[prop] = this.randChar());
 					},
 				});
 
 				placeholder.roll();
 				// make sure none of the placeholder strings occur in the string or match the brackets
 				function test(bracket, ph) {
-					if (typeof bracket == 'string') {
+					if (typeof bracket === `string`) {
 						if (bracket.includes(ph)) placeholder.roll();
 					} else if (bracket.test(ph)) {
 						placeholder.roll();
@@ -283,9 +283,9 @@ class BracketTree extends Array {
 
 				// turn into a string with placeholders
 				placeholder.current = 1;
-				let phStr = '';
+				let phStr = ``;
 				for (let i = start; i < finish; i++) {
-					if (typeof strOrBt[i] == 'string') {
+					if (typeof strOrBt[i] === `string`) {
 						phStr += strOrBt[i];
 					} else {
 						let ph = placeholder();
@@ -301,7 +301,7 @@ class BracketTree extends Array {
 					let ph = placeholder(),
 						i = 0;
 					while (i < bt.length) {
-						if (typeof bt[i] == 'string' && bt[i].includes(ph)) {
+						if (typeof bt[i] === `string` && bt[i].includes(ph)) {
 							let split = bt[i].split(ph),
 								// recurse over the sub-BT
 								subBt = new BracketTree(placeholder.map[ph], open, close);
@@ -354,7 +354,7 @@ class BracketTree extends Array {
 	}
 
 	stringsOnly() {
-		let str = '',
+		let str = ``,
 			start,
 			finish;
 		if (this.complete) {
@@ -366,11 +366,11 @@ class BracketTree extends Array {
 		}
 
 		for (let i = start; i < finish; i++) {
-			if (typeof this[i] == 'string') str += this[i];
+			if (typeof this[i] === `string`) str += this[i];
 		}
 
 		/*for (let value of this) {
-			if (typeof value == 'string') str += value;
+			if (typeof value === `string`) str += value;
 		}*/
 
 		return str;
@@ -386,9 +386,9 @@ class BracketTree extends Array {
 	}
 
 	toString() {
-		let str = '';
+		let str = ``;
 		for (let value of this) {
-			if (typeof value == 'string') {
+			if (typeof value === `string`) {
 				str += value;
 			} else {
 				str += value.toString();
